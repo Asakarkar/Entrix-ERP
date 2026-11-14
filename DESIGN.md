@@ -256,3 +256,7 @@ src/
 4. Every page must have loading, empty, and error states.
 5. Verify pixel-level parity with the reference for: sidebar, header, KPI strip, shipment card, badges, segmented toggle.
 6. Keep components small, typed, and reusable; add Storybook stories or a `/design-system` demo page showing all components and states.
+
+
+
+sucess id : 6af85249b7483ba25cd6e732 14/11/26
