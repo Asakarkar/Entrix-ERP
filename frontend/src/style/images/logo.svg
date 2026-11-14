@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="540" viewBox="0 0 1280 360" role="img" aria-labelledby="title desc">
+  <title id="title">ENTRIX ERP — Connected Systems Logo</title>
+  <desc id="desc">A geometric, modular emblem representing connected business departments, beside the ENTRIX ERP wordmark.</desc>
+
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1765F5"/>
+      <stop offset="1" stop-color="#073DB8"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(34 34)">
+    <rect x="0" y="0" width="292" height="292" rx="58" fill="#071B49"/>
+    <path d="M62 62 H132 Q144 62 144 74 V132 H74 Q62 132 62 120 Z" fill="#FFFFFF"/>
+    <path d="M160 62 H230 Q242 62 242 74 V120 Q242 132 230 132 H160 Z" fill="#2D75FF"/>
+    <path d="M62 160 H132 V218 Q132 230 120 230 H74 Q62 230 62 218 Z" fill="#2D75FF"/>
+    <path d="M160 160 H230 Q242 160 242 172 V218 Q242 230 230 230 H160 Z" fill="#FFFFFF"/>
+    <circle cx="146" cy="146" r="22" fill="#071B49"/>
+    <circle cx="146" cy="146" r="9" fill="#FFFFFF"/>
+    <path d="M132 97 H160 M132 195 H160 M97 132 V160 M195 132 V160" stroke="#071B49" stroke-width="13" stroke-linecap="round"/>
+  </g>
+
+  <g font-family="Inter, Arial, Helvetica, sans-serif">
+    <text x="390" y="174" font-size="150" font-weight="800" letter-spacing="1.5" fill="#071B49">ENTRIX</text>
+    <text x="396" y="269" font-size="84" font-weight="700" letter-spacing="11" fill="#1765F5">ENTERPRISE</text>
+    <path d="M399 294 H1188" stroke="#D7E2F5" stroke-width="4"/>
+  </g>
+</svg>
