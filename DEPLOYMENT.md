@@ -1,6 +1,6 @@
 # Vercel and Render deployment
 
-The frontend is a Vite single-page app for Vercel. The Express API is deployed separately on Render. MongoDB must be reachable over the internet; a local MongoDB instance cannot be used by Render.
+The frontend is a Vite single-page app for Vercel. The Express API is deployed separately on Render. Both services use Node.js 26.x. MongoDB must be reachable over the internet; a local MongoDB instance cannot be used by Render.
 
 ## 1. Prepare MongoDB
 

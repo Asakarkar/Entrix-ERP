@@ -1,12 +1,17 @@
+// The legacy JWT dependency still expects Node's removed SlowBuffer alias.
+const buffer = require('buffer');
+if (!buffer.SlowBuffer) {
+  buffer.SlowBuffer = buffer.Buffer;
+}
+
 require('module-alias/register');
 const mongoose = require('mongoose');
 const { globSync } = require('glob');
 const path = require('path');
 
-// Make sure we are running node 7.6+
-const [major, minor] = process.versions.node.split('.').map(parseFloat);
-if (major < 20) {
-  console.log('Please upgrade your node.js version at least 20 or greater. 👌\n ');
+const majorNodeVersion = Number(process.versions.node.split('.')[0]);
+if (majorNodeVersion < 26) {
+  console.log('Please upgrade your node.js version to 26 or greater. 👌\n ');
   process.exit();
 }
 

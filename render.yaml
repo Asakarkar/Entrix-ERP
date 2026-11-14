@@ -9,7 +9,7 @@ services:
     healthCheckPath: /healthz
     envVars:
       - key: NODE_VERSION
-        value: 20.9.0
+        value: 26.x
       - key: NODE_ENV
         value: production
       - key: DATABASE
