@@ -19,15 +19,8 @@ if (majorNodeVersion < 26) {
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local' });
 
-mongoose.connect(process.env.DATABASE);
-
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-
 mongoose.connection.on('error', (error) => {
-  console.log(
-    `1. 🔥 Common Error caused issue → : check your .env file first and add your mongodb url`
-  );
-  console.error(`2. 🚫 Error → : ${error.message}`);
+  console.error(`MongoDB connection error: ${error.name}${error.code ? ` (${error.code})` : ''}`);
 });
 
 const modelsFiles = globSync('./src/models/**/*.js');
@@ -39,6 +32,25 @@ for (const filePath of modelsFiles) {
 // Start our app!
 const app = require('./app');
 app.set('port', process.env.PORT || 8888);
-const server = app.listen(app.get('port'), () => {
-  console.log(`Express running → On PORT : ${server.address().port}`);
+
+async function startServer() {
+  if (!process.env.DATABASE) {
+    throw new Error('DATABASE must be configured before starting the API.');
+  }
+
+  await mongoose.connect(process.env.DATABASE, { serverSelectionTimeoutMS: 10000 });
+
+  const server = app.listen(app.get('port'), () => {
+    console.log(`Express running → On PORT : ${server.address().port}`);
+  });
+  server.on('error', (error) => {
+    console.error(`Express startup error: ${error.name}${error.code ? ` (${error.code})` : ''}`);
+    process.exitCode = 1;
+  });
+}
+
+startServer().catch(async (error) => {
+  console.error(`Server startup failed: ${error.name}${error.code ? ` (${error.code})` : ''}`);
+  await mongoose.disconnect().catch(() => {});
+  process.exitCode = 1;
 });
