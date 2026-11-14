@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: entrix-erp-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 20.9.0
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+      - key: OWNER_EMAIL
+        sync: false
+      - key: OWNER_PASSWORD
+        sync: false
