@@ -20,7 +20,7 @@ require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local' });
 
 mongoose.connection.on('error', (error) => {
-  console.error(`MongoDB connection error: ${error.name}${error.code ? ` (${error.code})` : ''}`);
+  console.error(`MongoDB connection error: ${error.name}${error.code ? ` (${error.code})` : ''}: ${error.message}`);
 });
 
 const modelsFiles = globSync('./src/models/**/*.js');
@@ -50,7 +50,7 @@ async function startServer() {
 }
 
 startServer().catch(async (error) => {
-  console.error(`Server startup failed: ${error.name}${error.code ? ` (${error.code})` : ''}`);
+  console.error(`Server startup failed: ${error.name}${error.code ? ` (${error.code})` : ''}: ${error.message}`);
   await mongoose.disconnect().catch(() => {});
   process.exitCode = 1;
 });
