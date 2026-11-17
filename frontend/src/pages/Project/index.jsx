@@ -20,6 +20,7 @@ import {
   Statistic,
   Table,
   Tag,
+  Tabs,
   Typography,
   message,
 } from 'antd';
@@ -88,6 +89,147 @@ function getProjectProgress(project) {
 
 function getProjectSpend(project) {
   return (project.expenses || []).reduce((total, expense) => total + Number(expense.amount || 0), 0);
+}
+
+function getTaskActualCost(project, taskId) {
+  return (project.expenses || []).reduce(
+    (total, expense) => total + (String(expense.taskId || '') === String(taskId) ? Number(expense.amount || 0) : 0),
+    0
+  );
+}
+
+function normalizeEmployeeName(name) {
+  return (name || '').trim().toLowerCase();
+}
+
+function buildResourceReport(projects) {
+  const employees = new Map();
+  const departments = new Map();
+  const allocations = [];
+  const assets = [];
+  const departmentFor = (name) => {
+    const departmentName = name || 'Unassigned';
+    if (!departments.has(departmentName)) {
+      departments.set(departmentName, {
+        name: departmentName,
+        employees: new Set(),
+        capacityHours: 0,
+        allocatedHours: 0,
+        taskCount: 0,
+        completedTasks: 0,
+        estimatedCosts: {},
+        actualCosts: {},
+      });
+    }
+    return departments.get(departmentName);
+  };
+  const employeeFor = (name) => {
+    const key = normalizeEmployeeName(name);
+    if (!key) return null;
+    if (!employees.has(key)) {
+      employees.set(key, {
+        key,
+        name: name.trim(),
+        department: 'Unassigned',
+        capacityHours: 0,
+        allocatedHours: 0,
+        openTasks: 0,
+        completedTasks: 0,
+        estimatedHours: 0,
+        projects: [],
+      });
+    }
+    return employees.get(key);
+  };
+
+  projects.forEach((project) => {
+    const currency = project.currency || 'USD';
+    const activeProject = !['completed', 'cancelled'].includes(project.status);
+    const projectMembers = new Map();
+    (project.members || []).forEach((member) => {
+      const employee = employeeFor(member.name);
+      if (!employee) return;
+      employee.department = employee.department === 'Unassigned' && member.department ? member.department : employee.department;
+      const capacity = Number(member.weeklyCapacityHours ?? 40);
+      employee.capacityHours = Math.max(employee.capacityHours, capacity);
+      const allocation = Number(member.allocation ?? 100);
+      const allocatedHours = capacity * allocation / 100;
+      if (activeProject) employee.allocatedHours += allocatedHours;
+      employee.projects.push({
+        project: project.name,
+        status: project.status,
+        allocation,
+        allocatedHours: activeProject ? allocatedHours : 0,
+      });
+      projectMembers.set(normalizeEmployeeName(member.name), employee);
+      allocations.push({
+        key: `${project._id}-${member._id || member.name}`,
+        project: project.name,
+        status: project.status,
+        employee: member.name,
+        department: member.department || 'Unassigned',
+        allocation,
+        allocatedHours: activeProject ? allocatedHours : 0,
+      });
+    });
+
+    const taskOwners = new Map();
+    (project.tasks || []).forEach((task) => {
+      const owner = projectMembers.get(normalizeEmployeeName(task.assignee)) || employeeFor(task.assignee);
+      const departmentName = owner?.department || 'Unassigned';
+      const department = departmentFor(departmentName);
+      department.taskCount += 1;
+      if (task.status === 'done') department.completedTasks += 1;
+      const estimatedCost = Number(task.estimatedCost || 0);
+      department.estimatedCosts[currency] = (department.estimatedCosts[currency] || 0) + estimatedCost;
+      if (owner) {
+        if (task.status === 'done') owner.completedTasks += 1;
+        else {
+          owner.openTasks += 1;
+          owner.estimatedHours += Number(task.estimatedHours || 0);
+        }
+        taskOwners.set(String(task._id), { owner, department });
+      } else {
+        taskOwners.set(String(task._id), { owner: null, department });
+      }
+    });
+
+    (project.expenses || []).forEach((expense) => {
+      const taskOwner = expense.taskId ? taskOwners.get(String(expense.taskId)) : null;
+      if (!taskOwner) return;
+      const amount = Number(expense.amount || 0);
+      taskOwner.department.actualCosts[currency] = (taskOwner.department.actualCosts[currency] || 0) + amount;
+    });
+
+    (project.resources || []).forEach((resource) => {
+      assets.push({
+        key: `${project._id}-${resource._id || resource.name}`,
+        project: project.name,
+        status: project.status,
+        name: resource.name,
+        category: resource.category || 'General',
+        assignedTo: resource.assignedTo || 'Unassigned',
+        quantity: Number(resource.quantity || 0),
+        capacity: Number(resource.capacity || 0),
+        allocatedCost: Number(resource.allocatedCost || 0),
+        currency,
+      });
+    });
+  });
+
+  employees.forEach((employee) => {
+    const department = departmentFor(employee.department);
+    department.employees.add(employee.key);
+    department.capacityHours += employee.capacityHours;
+    department.allocatedHours += employee.allocatedHours;
+  });
+
+  return {
+    employees: Array.from(employees.values()).sort((a, b) => a.name.localeCompare(b.name)),
+    departments: Array.from(departments.values()).sort((a, b) => a.name.localeCompare(b.name)),
+    allocations,
+    assets,
+  };
 }
 
 function formatCurrencyTotals(totals, moneyFormatter, defaultCurrency) {
@@ -188,7 +330,7 @@ function ProjectForm({ form, currency, initialValues, onFinish, onCancel, saving
   );
 }
 
-function EntryModal({ kind, open, onCancel, onSubmit, saving, members }) {
+function EntryModal({ kind, open, onCancel, onSubmit, saving, members, tasks }) {
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -204,6 +346,18 @@ function EntryModal({ kind, open, onCancel, onSubmit, saving, members }) {
           <Select allowClear showSearch options={members.map((member) => ({ value: member.name, label: member.name }))} />
         </Form.Item>
         <Form.Item name="dueDate" label="Deadline"><DatePicker style={{ width: '100%' }} /></Form.Item>
+        <Row gutter={12}>
+          <Col span={12}>
+            <Form.Item name="estimatedHours" label="Estimated effort (hours)" initialValue={0}>
+              <InputNumber min={0} precision={1} style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="estimatedCost" label="Estimated cost">
+              <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+        </Row>
         <Form.Item name="priority" label="Priority" initialValue="medium">
           <Select options={['low', 'medium', 'high'].map((value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }))} />
         </Form.Item>
@@ -214,9 +368,22 @@ function EntryModal({ kind, open, onCancel, onSubmit, saving, members }) {
         <Form.Item name="name" label="Employee name" rules={[{ required: true }]}><Input /></Form.Item>
         <Form.Item name="email" label="Email"><Input type="email" /></Form.Item>
         <Form.Item name="role" label="Role / responsibility"><Input /></Form.Item>
+        <Form.Item name="department" label="Department"><Input placeholder="Engineering, Sales, Operations..." /></Form.Item>
         <Form.Item name="allocation" label="Project allocation (%)" initialValue={100}>
           <InputNumber min={0} max={100} style={{ width: '100%' }} />
         </Form.Item>
+        <Row gutter={12}>
+          <Col span={12}>
+            <Form.Item name="weeklyCapacityHours" label="Weekly capacity (hours)" initialValue={40}>
+              <InputNumber min={0} style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="hourlyRate" label="Hourly cost rate">
+              <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+        </Row>
       </>
     ),
     expense: (
@@ -225,6 +392,13 @@ function EntryModal({ kind, open, onCancel, onSubmit, saving, members }) {
         <Form.Item name="category" label="Category"><Input placeholder="Travel, software, materials..." /></Form.Item>
         <Form.Item name="amount" label="Amount" rules={[{ required: true }]}><InputNumber min={0} precision={2} style={{ width: '100%' }} /></Form.Item>
         <Form.Item name="date" label="Date" initialValue={dayjs()} rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} /></Form.Item>
+        <Form.Item name="taskId" label="Associate with task">
+          <Select
+            allowClear
+            showSearch
+            options={tasks.map((task) => ({ value: String(task._id), label: task.title }))}
+          />
+        </Form.Item>
         <Form.Item name="submittedBy" label="Submitted by"><Input /></Form.Item>
       </>
     ),
@@ -233,9 +407,12 @@ function EntryModal({ kind, open, onCancel, onSubmit, saving, members }) {
         <Form.Item name="name" label="Resource" rules={[{ required: true }]}><Input placeholder="Equipment, software, vehicle..." /></Form.Item>
         <Form.Item name="category" label="Category"><Input /></Form.Item>
         <Row gutter={12}>
-          <Col span={12}><Form.Item name="quantity" label="Quantity" initialValue={1} rules={[{ required: true }]}><InputNumber min={0} style={{ width: '100%' }} /></Form.Item></Col>
+          <Col span={12}><Form.Item name="quantity" label="Allocated quantity" initialValue={1} rules={[{ required: true }]}><InputNumber min={0} style={{ width: '100%' }} /></Form.Item></Col>
           <Col span={12}><Form.Item name="unit" label="Unit"><Input placeholder="hours, units..." /></Form.Item></Col>
         </Row>
+        <Form.Item name="capacity" label="Available capacity" initialValue={1}>
+          <InputNumber min={0} style={{ width: '100%' }} />
+        </Form.Item>
         <Form.Item name="assignedTo" label="Allocated to">
           <Select allowClear showSearch options={members.map((member) => ({ value: member.name, label: member.name }))} />
         </Form.Item>
@@ -334,7 +511,11 @@ function ProjectDetails({ project, onUpdate, onAdd, onRemove }) {
           <div className="project-entry" key={member._id || member.name}>
             <div className="project-entry-main">
               <Space><Avatar size="small">{member.name?.[0]?.toUpperCase()}</Avatar><Text strong>{member.name}</Text></Space>
-              <div className="project-entry-meta"><span>{member.role || member.email || 'Team member'}</span><span>{member.allocation}% allocation</span></div>
+                    <div className="project-entry-meta">
+                      <span>{member.department || member.role || member.email || 'Team member'}</span>
+                      <span>{member.allocation}% allocation</span>
+                      <span>{member.weeklyCapacityHours ?? 40}h/week capacity</span>
+                    </div>
             </div>
             <Button size="small" type="text" danger icon={<DeleteOutlined />} onClick={() => onRemove('members', member._id)} aria-label={`Unassign ${member.name}`} />
           </div>
