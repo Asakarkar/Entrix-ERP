@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button, Drawer, Layout, Menu } from 'antd';
 
 import useLanguage from '@/locale/useLanguage';
@@ -19,6 +19,15 @@ import {
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
+const navigationPaths = {
+  dashboard: '/',
+  customer: '/customer',
+  invoice: '/invoice',
+  project: '/project',
+  payment: '/payment',
+  generalSettings: '/settings',
+  about: '/about',
+};
 
 export default function Navigation() {
   const { isMobile } = useResponsive();
@@ -29,6 +38,7 @@ export default function Navigation() {
 function Sidebar({ isMobile = false }) {
   const [expanded, setExpanded] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const translate = useLanguage();
 
   const primaryItems = [
@@ -36,44 +46,44 @@ function Sidebar({ isMobile = false }) {
       key: 'dashboard',
       icon: <DashboardOutlined />,
       title: translate('dashboard'),
-      label: <Link to={'/'}>{translate('dashboard')}</Link>,
+      label: translate('dashboard'),
     },
     {
       key: 'customer',
       icon: <CustomerServiceOutlined />,
       title: translate('customers'),
-      label: <Link to={'/customer'}>{translate('customers')}</Link>,
+      label: translate('customers'),
     },
     {
       key: 'invoice',
       icon: <ContainerOutlined />,
       title: translate('invoices'),
-      label: <Link to={'/invoice'}>{translate('invoices')}</Link>,
+      label: translate('invoices'),
     },
     {
       key: 'project',
       icon: <ProjectOutlined />,
       title: 'Projects',
-      label: <Link to={'/project'}>Projects</Link>,
+      label: 'Projects',
     },
     {
       key: 'payment',
       icon: <CreditCardOutlined />,
       title: translate('payments'),
-      label: <Link to={'/payment'}>{translate('payments')}</Link>,
+      label: translate('payments'),
     },
   ];
 
   const utilityItems = [
     {
       key: 'generalSettings',
-      label: <Link to={'/settings'}>{translate('settings')}</Link>,
+      label: translate('settings'),
       icon: <SettingOutlined />,
       title: translate('settings'),
     },
     {
       key: 'about',
-      label: <Link to={'/about'}>{translate('about')}</Link>,
+      label: translate('about'),
       icon: <InfoCircleOutlined />,
       title: translate('about'),
     },
@@ -129,6 +139,7 @@ function Sidebar({ isMobile = false }) {
         mode="inline"
         theme={'light'}
         selectedKeys={[selectedKey]}
+        onClick={({ key }) => navigate(navigationPaths[key])}
       />
       <div className="nav-spacer" />
       <Menu
@@ -137,6 +148,7 @@ function Sidebar({ isMobile = false }) {
         mode="inline"
         theme={'light'}
         selectedKeys={[selectedKey]}
+        onClick={({ key }) => navigate(navigationPaths[key])}
       />
     </Sider>
   );
