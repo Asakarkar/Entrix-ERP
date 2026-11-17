@@ -15,6 +15,7 @@ import {
   CreditCardOutlined,
   MenuOutlined,
   InfoCircleOutlined,
+  ProjectOutlined,
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -49,6 +50,12 @@ function Sidebar({ isMobile = false }) {
       label: <Link to={'/invoice'}>{translate('invoices')}</Link>,
     },
     {
+      key: 'project',
+      icon: <ProjectOutlined />,
+      title: 'Projects',
+      label: <Link to={'/project'}>Projects</Link>,
+    },
+    {
       key: 'payment',
       icon: <CreditCardOutlined />,
       title: translate('payments'),
@@ -78,6 +85,8 @@ function Sidebar({ isMobile = false }) {
       ? 'customer'
       : path.startsWith('/invoice')
         ? 'invoice'
+        : path.startsWith('/project')
+          ? 'project'
         : path.startsWith('/payment')
           ? 'payment'
           : path.startsWith('/settings')

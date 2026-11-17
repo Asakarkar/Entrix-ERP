@@ -7,6 +7,7 @@ const NotFound = lazy(() => import('@/pages/NotFound.jsx'));
 
 
 const Customer = lazy(() => import('@/pages/Customer'));
+const Projects = lazy(() => import('@/pages/Project'));
 const Invoice = lazy(() => import('@/pages/Invoice'));
 const InvoiceCreate = lazy(() => import('@/pages/Invoice/InvoiceCreate'));
 
@@ -48,6 +49,10 @@ let routes = {
     {
       path: '/customer',
       element: <Customer />,
+    },
+    {
+      path: '/project',
+      element: <Projects />,
     },
 
     {
