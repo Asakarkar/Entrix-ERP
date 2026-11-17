@@ -59,6 +59,17 @@
   box-shadow: none;
 }
 
+.resource-management-card {
+  margin-top: 20px;
+  border-color: var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: none;
+}
+
+.resource-management-card .ant-tabs-nav {
+  margin-bottom: 16px;
+}
+
 .projects-toolbar {
   align-items: flex-start;
   margin-bottom: 20px;

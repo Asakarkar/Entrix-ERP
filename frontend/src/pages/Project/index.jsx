@@ -38,6 +38,7 @@ import request from '@/request/request';
 import useMoney from '@/settings/useMoney';
 import { selectCurrentAdmin } from '@/redux/auth/selectors';
 import { useSelector } from 'react-redux';
+import { buildResourceReport, getTaskActualCost } from './resourceManagement';
 import './project.css';
 
 const { Text, Title } = Typography;
@@ -89,147 +90,6 @@ function getProjectProgress(project) {
 
 function getProjectSpend(project) {
   return (project.expenses || []).reduce((total, expense) => total + Number(expense.amount || 0), 0);
-}
-
-function getTaskActualCost(project, taskId) {
-  return (project.expenses || []).reduce(
-    (total, expense) => total + (String(expense.taskId || '') === String(taskId) ? Number(expense.amount || 0) : 0),
-    0
-  );
-}
-
-function normalizeEmployeeName(name) {
-  return (name || '').trim().toLowerCase();
-}
-
-function buildResourceReport(projects) {
-  const employees = new Map();
-  const departments = new Map();
-  const allocations = [];
-  const assets = [];
-  const departmentFor = (name) => {
-    const departmentName = name || 'Unassigned';
-    if (!departments.has(departmentName)) {
-      departments.set(departmentName, {
-        name: departmentName,
-        employees: new Set(),
-        capacityHours: 0,
-        allocatedHours: 0,
-        taskCount: 0,
-        completedTasks: 0,
-        estimatedCosts: {},
-        actualCosts: {},
-      });
-    }
-    return departments.get(departmentName);
-  };
-  const employeeFor = (name) => {
-    const key = normalizeEmployeeName(name);
-    if (!key) return null;
-    if (!employees.has(key)) {
-      employees.set(key, {
-        key,
-        name: name.trim(),
-        department: 'Unassigned',
-        capacityHours: 0,
-        allocatedHours: 0,
-        openTasks: 0,
-        completedTasks: 0,
-        estimatedHours: 0,
-        projects: [],
-      });
-    }
-    return employees.get(key);
-  };
-
-  projects.forEach((project) => {
-    const currency = project.currency || 'USD';
-    const activeProject = !['completed', 'cancelled'].includes(project.status);
-    const projectMembers = new Map();
-    (project.members || []).forEach((member) => {
-      const employee = employeeFor(member.name);
-      if (!employee) return;
-      employee.department = employee.department === 'Unassigned' && member.department ? member.department : employee.department;
-      const capacity = Number(member.weeklyCapacityHours ?? 40);
-      employee.capacityHours = Math.max(employee.capacityHours, capacity);
-      const allocation = Number(member.allocation ?? 100);
-      const allocatedHours = capacity * allocation / 100;
-      if (activeProject) employee.allocatedHours += allocatedHours;
-      employee.projects.push({
-        project: project.name,
-        status: project.status,
-        allocation,
-        allocatedHours: activeProject ? allocatedHours : 0,
-      });
-      projectMembers.set(normalizeEmployeeName(member.name), employee);
-      allocations.push({
-        key: `${project._id}-${member._id || member.name}`,
-        project: project.name,
-        status: project.status,
-        employee: member.name,
-        department: member.department || 'Unassigned',
-        allocation,
-        allocatedHours: activeProject ? allocatedHours : 0,
-      });
-    });
-
-    const taskOwners = new Map();
-    (project.tasks || []).forEach((task) => {
-      const owner = projectMembers.get(normalizeEmployeeName(task.assignee)) || employeeFor(task.assignee);
-      const departmentName = owner?.department || 'Unassigned';
-      const department = departmentFor(departmentName);
-      department.taskCount += 1;
-      if (task.status === 'done') department.completedTasks += 1;
-      const estimatedCost = Number(task.estimatedCost || 0);
-      department.estimatedCosts[currency] = (department.estimatedCosts[currency] || 0) + estimatedCost;
-      if (owner) {
-        if (task.status === 'done') owner.completedTasks += 1;
-        else {
-          owner.openTasks += 1;
-          owner.estimatedHours += Number(task.estimatedHours || 0);
-        }
-        taskOwners.set(String(task._id), { owner, department });
-      } else {
-        taskOwners.set(String(task._id), { owner: null, department });
-      }
-    });
-
-    (project.expenses || []).forEach((expense) => {
-      const taskOwner = expense.taskId ? taskOwners.get(String(expense.taskId)) : null;
-      if (!taskOwner) return;
-      const amount = Number(expense.amount || 0);
-      taskOwner.department.actualCosts[currency] = (taskOwner.department.actualCosts[currency] || 0) + amount;
-    });
-
-    (project.resources || []).forEach((resource) => {
-      assets.push({
-        key: `${project._id}-${resource._id || resource.name}`,
-        project: project.name,
-        status: project.status,
-        name: resource.name,
-        category: resource.category || 'General',
-        assignedTo: resource.assignedTo || 'Unassigned',
-        quantity: Number(resource.quantity || 0),
-        capacity: Number(resource.capacity || 0),
-        allocatedCost: Number(resource.allocatedCost || 0),
-        currency,
-      });
-    });
-  });
-
-  employees.forEach((employee) => {
-    const department = departmentFor(employee.department);
-    department.employees.add(employee.key);
-    department.capacityHours += employee.capacityHours;
-    department.allocatedHours += employee.allocatedHours;
-  });
-
-  return {
-    employees: Array.from(employees.values()).sort((a, b) => a.name.localeCompare(b.name)),
-    departments: Array.from(departments.values()).sort((a, b) => a.name.localeCompare(b.name)),
-    allocations,
-    assets,
-  };
 }
 
 function formatCurrencyTotals(totals, moneyFormatter, defaultCurrency) {
@@ -486,6 +346,9 @@ function ProjectDetails({ project, onUpdate, onAdd, onRemove }) {
               <div className="project-entry-meta">
                 {task.assignee && <span>{task.assignee}</span>}
                 {task.dueDate && <span className={dayjs(task.dueDate).isBefore(now, 'day') && task.status !== 'done' ? 'project-overdue' : ''}><CalendarOutlined /> {formatDate(task.dueDate)}</span>}
+                <span>{Number(task.estimatedHours || 0)}h estimated</span>
+                <span>Estimated cost: {moneyFormatter({ amount: task.estimatedCost, currency_code: project.currency })}</span>
+                <span>Actual cost: {moneyFormatter({ amount: getTaskActualCost(project, task._id), currency_code: project.currency })}</span>
                 <StatusTag status={task.priority} />
               </div>
             </div>
@@ -583,6 +446,299 @@ function createCsv(columns, projects) {
   return [columns, ...rows].map((row) => row.map(escape).join(',')).join('\r\n');
 }
 
+function ResourceManagement({ report, moneyFormatter, defaultCurrency, loading }) {
+  const capacityHours = report.employees.reduce((total, employee) => total + employee.capacityHours, 0);
+  const allocatedHours = report.employees.reduce((total, employee) => total + employee.allocatedHours, 0);
+  const utilization = capacityHours ? Math.round((allocatedHours / capacityHours) * 100) : 0;
+  const overallocatedEmployees = report.employees.filter(
+    (employee) => employee.capacityHours > 0 && employee.allocatedHours > employee.capacityHours
+  ).length;
+
+  const renderUtilization = (allocated, capacity) => {
+    if (!capacity) return <Text type="secondary">Capacity not set</Text>;
+    const percent = Math.round((allocated / capacity) * 100);
+    return (
+      <Progress
+        size="small"
+        percent={Math.min(percent, 100)}
+        format={() => `${percent}%`}
+        status={percent > 100 ? 'exception' : undefined}
+      />
+    );
+  };
+
+  const workloadColumns = [
+    { title: 'Employee', dataIndex: 'name', key: 'name' },
+    { title: 'Department', dataIndex: 'department', key: 'department' },
+    {
+      title: 'Capacity / week',
+      dataIndex: 'capacityHours',
+      key: 'capacityHours',
+      render: (hours) => `${hours.toFixed(1)} h`,
+    },
+    {
+      title: 'Allocated / week',
+      dataIndex: 'allocatedHours',
+      key: 'allocatedHours',
+      render: (hours) => `${hours.toFixed(1)} h`,
+    },
+    {
+      title: 'Utilization',
+      key: 'utilization',
+      render: (_, employee) => renderUtilization(employee.allocatedHours, employee.capacityHours),
+    },
+    { title: 'Open tasks', dataIndex: 'openTasks', key: 'openTasks' },
+    {
+      title: 'Projects',
+      key: 'projects',
+      render: (_, employee) => employee.projects.map((project) => project.project).join(', '),
+    },
+    {
+      title: 'Open task effort',
+      dataIndex: 'estimatedHours',
+      key: 'estimatedHours',
+      render: (hours) => `${hours.toFixed(1)} h`,
+    },
+    { title: 'Completed tasks', dataIndex: 'completedTasks', key: 'completedTasks' },
+  ];
+
+  const allocationColumns = [
+    { title: 'Project', dataIndex: 'project', key: 'project' },
+    { title: 'Employee', dataIndex: 'employee', key: 'employee' },
+    { title: 'Department', dataIndex: 'department', key: 'department' },
+    { title: 'Allocation', dataIndex: 'allocation', key: 'allocation', render: (value) => `${value}%` },
+    {
+      title: 'Allocated hours / week',
+      dataIndex: 'allocatedHours',
+      key: 'allocatedHours',
+      render: (hours) => `${hours.toFixed(1)} h`,
+    },
+    { title: 'Project status', dataIndex: 'status', key: 'status', render: (status) => <StatusTag status={status} /> },
+  ];
+
+  const assetColumns = [
+    { title: 'Project', dataIndex: 'project', key: 'project' },
+    { title: 'Resource', dataIndex: 'name', key: 'name' },
+    { title: 'Category', dataIndex: 'category', key: 'category' },
+    { title: 'Assigned to', dataIndex: 'assignedTo', key: 'assignedTo' },
+    {
+      title: 'Allocated',
+      key: 'quantity',
+      render: (_, resource) => `${resource.quantity} ${resource.unit || ''}`.trim(),
+    },
+    { title: 'Capacity', dataIndex: 'capacity', key: 'capacity' },
+    {
+      title: 'Utilization',
+      key: 'utilization',
+      render: (_, resource) => renderUtilization(resource.quantity, resource.capacity),
+    },
+    {
+      title: 'Allocated cost',
+      key: 'allocatedCost',
+      render: (_, resource) =>
+        moneyFormatter({ amount: resource.allocatedCost, currency_code: resource.currency }),
+    },
+  ];
+
+  const departmentColumns = [
+    { title: 'Department', dataIndex: 'name', key: 'name' },
+    {
+      title: 'Employees',
+      dataIndex: 'employees',
+      key: 'employees',
+      render: (employees) => employees.size,
+    },
+    {
+      title: 'Capacity / week',
+      dataIndex: 'capacityHours',
+      key: 'capacityHours',
+      render: (hours) => `${hours.toFixed(1)} h`,
+    },
+    {
+      title: 'Allocated / week',
+      dataIndex: 'allocatedHours',
+      key: 'allocatedHours',
+      render: (hours) => `${hours.toFixed(1)} h`,
+    },
+    {
+      title: 'Utilization',
+      key: 'utilization',
+      render: (_, department) =>
+        renderUtilization(department.allocatedHours, department.capacityHours),
+    },
+    {
+      title: 'Task completion',
+      key: 'taskCompletion',
+      render: (_, department) => {
+        const percent = department.taskCount
+          ? Math.round((department.completedTasks / department.taskCount) * 100)
+          : 0;
+        return <Progress size="small" percent={percent} format={() => `${department.completedTasks}/${department.taskCount}`} />;
+      },
+    },
+    {
+      title: 'Estimated task cost',
+      key: 'estimatedCosts',
+      render: (_, department) =>
+        formatCurrencyTotals(department.estimatedCosts, moneyFormatter, defaultCurrency),
+    },
+    {
+      title: 'Actual expense cost',
+      key: 'actualCosts',
+      render: (_, department) =>
+        formatCurrencyTotals(department.actualCosts, moneyFormatter, defaultCurrency),
+    },
+  ];
+
+  const taskCostColumns = [
+    { title: 'Project', dataIndex: 'project', key: 'project' },
+    { title: 'Task', dataIndex: 'title', key: 'title' },
+    { title: 'Assignee', dataIndex: 'assignee', key: 'assignee' },
+    { title: 'Department', dataIndex: 'department', key: 'department' },
+    { title: 'Status', dataIndex: 'status', key: 'status', render: (status) => <StatusTag status={status} /> },
+    {
+      title: 'Estimated hours',
+      dataIndex: 'estimatedHours',
+      key: 'estimatedHours',
+      render: (hours) => `${hours.toFixed(1)} h`,
+    },
+    {
+      title: 'Estimated cost',
+      key: 'estimatedCost',
+      render: (_, task) =>
+        moneyFormatter({ amount: task.estimatedCost, currency_code: task.currency }),
+    },
+    {
+      title: 'Actual cost',
+      key: 'actualCost',
+      render: (_, task) =>
+        moneyFormatter({ amount: task.actualCost, currency_code: task.currency }),
+    },
+    {
+      title: 'Cost variance',
+      key: 'variance',
+      render: (_, task) => {
+        const variance = task.actualCost - task.estimatedCost;
+        return (
+          <Text type={variance > 0 ? 'danger' : 'success'}>
+            {moneyFormatter({ amount: variance, currency_code: task.currency })}
+          </Text>
+        );
+      },
+    },
+  ];
+
+  const emptyTable = (description) => ({ emptyText: loading ? 'Loading resource data...' : description });
+
+  return (
+    <Card className="resource-management-card" title="Resource management">
+      <Row gutter={[16, 16]} className="project-metrics">
+        <Col xs={12} xl={6}>
+          <Card><Statistic title="Employees tracked" value={report.employees.length} /></Card>
+        </Col>
+        <Col xs={12} xl={6}>
+          <Card title="Weekly capacity">{capacityHours.toFixed(1)} h</Card>
+        </Col>
+        <Col xs={12} xl={6}>
+          <Card title="Allocated hours / week">{allocatedHours.toFixed(1)} h</Card>
+        </Col>
+        <Col xs={12} xl={6}>
+          <Card>
+            <Statistic title="Team utilization" value={utilization} suffix="%" />
+            <Text type={overallocatedEmployees ? 'danger' : 'secondary'}>
+              {overallocatedEmployees} overallocated employee{overallocatedEmployees === 1 ? '' : 's'}
+            </Text>
+          </Card>
+        </Col>
+      </Row>
+      <Tabs
+        items={[
+          {
+            key: 'workload',
+            label: 'Employee workload',
+            children: (
+              <Table
+                size="small"
+                rowKey="key"
+                columns={workloadColumns}
+                dataSource={report.employees}
+                loading={loading}
+                pagination={{ pageSize: 8, showSizeChanger: true }}
+                locale={emptyTable('No employees or assigned tasks yet.')}
+                scroll={{ x: 900 }}
+              />
+            ),
+          },
+          {
+            key: 'allocation',
+            label: 'Project allocation',
+            children: (
+              <Table
+                size="small"
+                rowKey="key"
+                columns={allocationColumns}
+                dataSource={report.allocations}
+                loading={loading}
+                pagination={{ pageSize: 8, showSizeChanger: true }}
+                locale={emptyTable('No project allocations yet.')}
+                scroll={{ x: 900 }}
+              />
+            ),
+          },
+          {
+            key: 'utilization',
+            label: 'Resource utilization',
+            children: (
+              <Table
+                size="small"
+                rowKey="key"
+                columns={assetColumns}
+                dataSource={report.assets}
+                loading={loading}
+                pagination={{ pageSize: 8, showSizeChanger: true }}
+                locale={emptyTable('No allocated resources yet.')}
+                scroll={{ x: 900 }}
+              />
+            ),
+          },
+          {
+            key: 'departments',
+            label: 'Department performance',
+            children: (
+              <Table
+                size="small"
+                rowKey="name"
+                columns={departmentColumns}
+                dataSource={report.departments}
+                loading={loading}
+                pagination={{ pageSize: 8, showSizeChanger: true }}
+                locale={emptyTable('No department data yet.')}
+                scroll={{ x: 1100 }}
+              />
+            ),
+          },
+          {
+            key: 'task-costs',
+            label: 'Task and cost association',
+            children: (
+              <Table
+                size="small"
+                rowKey="key"
+                columns={taskCostColumns}
+                dataSource={report.tasks}
+                loading={loading}
+                pagination={{ pageSize: 8, showSizeChanger: true }}
+                locale={emptyTable('No project tasks yet.')}
+                scroll={{ x: 1200 }}
+              />
+            ),
+          },
+        ]}
+      />
+    </Card>
+  );
+}
+
 export default function Projects() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -595,6 +751,7 @@ export default function Projects() {
   const [form] = Form.useForm();
   const { moneyFormatter, currency_code } = useMoney();
   const currentAdmin = useSelector(selectCurrentAdmin);
+  const resourceReport = useMemo(() => buildResourceReport(projects), [projects]);
 
   const loadProjects = useCallback(async () => {
     setLoading(true);
@@ -736,6 +893,13 @@ export default function Projects() {
           scroll={{ x: 900 }}
         />
       </Card>
+
+      <ResourceManagement
+        report={resourceReport}
+        moneyFormatter={moneyFormatter}
+        defaultCurrency={currency_code || 'USD'}
+        loading={loading}
+      />
 
       {totals.overdue > 0 && <Alert className="project-overdue-alert" type="warning" showIcon message={`${totals.overdue} project${totals.overdue === 1 ? '' : 's'} past deadline`} description="Review overdue projects and update their deadlines or status." />}
 
