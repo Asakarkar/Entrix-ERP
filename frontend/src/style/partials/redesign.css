@@ -455,7 +455,7 @@ h3,
   display: none;
 }
 
-.navigation:not(.navigation-mobile) .ant-menu-item .ant-menu-title-content {
+.navigation:not(.navigation-mobile):not(.navigation-expanded) .ant-menu-item .ant-menu-title-content {
   display: none !important;
 }
 
@@ -485,6 +485,52 @@ h3,
 
 .navigation .ant-menu-item a {
   color: inherit;
+}
+
+.erp-workspace > .navigation.navigation-expanded {
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  flex-basis: 240px !important;
+  box-shadow: var(--shadow-float);
+}
+
+.navigation.navigation-expanded .ant-layout-sider-children {
+  align-items: stretch;
+}
+
+.navigation.navigation-expanded .logo {
+  width: auto;
+  justify-content: flex-start;
+}
+
+.navigation.navigation-expanded .ant-menu {
+  width: 100% !important;
+}
+
+.navigation.navigation-expanded .ant-menu-item {
+  width: auto;
+  padding-inline: 14px !important;
+  justify-content: flex-start;
+}
+
+.navigation.navigation-expanded .ant-menu-item .ant-menu-title-content {
+  display: block !important;
+}
+
+.navigation.navigation-expanded .ant-menu-item-icon {
+  margin-inline-end: 10px;
+}
+
+.navigation .desktop-navigation-toggle {
+  width: 48px;
+  height: 40px;
+  margin-bottom: 12px;
+}
+
+.navigation.navigation-expanded .desktop-navigation-toggle {
+  align-self: flex-end;
+  margin-inline-end: 4px;
 }
 
 .erp-workspace > .ant-layout {

@@ -27,6 +27,7 @@ export default function Navigation() {
 }
 
 function Sidebar({ isMobile = false }) {
+  const [expanded, setExpanded] = useState(false);
   const location = useLocation();
   const translate = useLanguage();
 
@@ -98,11 +99,11 @@ function Sidebar({ isMobile = false }) {
   return (
     <Sider
       collapsible
-      collapsed={!isMobile}
+      collapsed={!isMobile && !expanded}
       collapsedWidth={72}
       trigger={null}
-      className={`navigation${isMobile ? ' navigation-mobile' : ''}`}
-      width={isMobile ? 256 : 72}
+      className={`navigation${isMobile ? ' navigation-mobile' : ''}${expanded && !isMobile ? ' navigation-expanded' : ''}`}
+      width={isMobile ? 256 : expanded ? 240 : 72}
       style={{
         overflow: 'auto',
         height: '100vh',
@@ -112,6 +113,16 @@ function Sidebar({ isMobile = false }) {
       <Link className="logo" to="/" aria-label={translate('dashboard')}>
         <img src={logoMark} alt="ENTRIX ERP" />
       </Link>
+      {!isMobile && (
+        <Button
+          type="text"
+          className="desktop-navigation-toggle"
+          icon={<MenuOutlined />}
+          aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'}
+          aria-expanded={expanded}
+          onClick={() => setExpanded((current) => !current)}
+        />
+      )}
       <Menu
         className="nav-primary"
         items={primaryItems}
