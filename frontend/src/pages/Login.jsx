@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import useLanguage from '@/locale/useLanguage';
 
@@ -17,6 +17,7 @@ const LoginPage = () => {
   const translate = useLanguage();
   const { isLoading, isSuccess } = useSelector(selectAuth);
   const navigate = useNavigate();
+  const location = useLocation();
   // const size = useSize();
 
   const dispatch = useDispatch();
@@ -25,8 +26,15 @@ const LoginPage = () => {
   };
 
   useEffect(() => {
-    if (isSuccess) navigate('/');
-  }, [isSuccess]);
+    if (isSuccess) {
+      const from = location.state?.from;
+      const destination =
+        typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')
+          ? from
+          : '/';
+      navigate(destination, { replace: true });
+    }
+  }, [isSuccess, location.state, navigate]);
 
   const FormContainer = () => {
     return (

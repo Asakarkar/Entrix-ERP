@@ -330,7 +330,7 @@ function ProjectForm({ form, currency, initialValues, onFinish, onCancel, saving
   );
 }
 
-function EntryModal({ kind, open, onCancel, onSubmit, saving, members, tasks }) {
+function EntryModal({ kind, open, onCancel, onSubmit, saving, members = [], tasks = [] }) {
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -784,6 +784,7 @@ export default function Projects() {
         onSubmit={addEntry}
         saving={saving}
         members={selectedProject?.members || (currentAdmin?.name ? [{ name: `${currentAdmin.name} ${currentAdmin.surname || ''}`.trim() }] : [])}
+        tasks={selectedProject?.tasks || []}
       />
     </div>
   );

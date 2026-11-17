@@ -12,18 +12,18 @@ const About = () => {
       extra={
         <>
           <p>
-            Website : <a href="https://www.idurarapp.com">www.idurarapp.com</a>{' '}
+            Website : <a href="https://adityasakarkar.in">https://adityasakarkar.in</a>{' '}
           </p>
           <p>
             GitHub :{' '}
-            <a href="https://github.com/idurar/idurar-erp-crm">
-              https://github.com/idurar/idurar-erp-crm
+            <a href="https://github.com/Asakarkar/Entrix-ERP">
+              https://github.com/Asakarkar/Entrix-ERP
             </a>
           </p>
           <Button
             type="primary"
             onClick={() => {
-              window.open(`https://www.idurarapp.com/contact-us/`);
+              window.open(`https://adityasakarkar.in/contact`);
             }}
           >
             {translate('Contact us')}
