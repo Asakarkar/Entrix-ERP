@@ -1,0 +1,81 @@
+.inventory-page {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 28px 32px 48px;
+}
+
+.inventory-header,
+.inventory-section-heading,
+.inventory-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.inventory-header {
+  margin-bottom: 24px;
+}
+
+.inventory-header h2.ant-typography {
+  margin: 6px 0 4px;
+}
+
+.inventory-eyebrow {
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.inventory-metrics {
+  margin-bottom: 20px;
+}
+
+.inventory-metrics .ant-card,
+.inventory-card {
+  height: 100%;
+  border-color: var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: none;
+}
+
+.inventory-alert {
+  margin-bottom: 20px;
+}
+
+.inventory-card .ant-tabs-nav {
+  margin-bottom: 22px;
+}
+
+.inventory-section-heading {
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.inventory-section-heading h4.ant-typography {
+  margin: 0 0 4px;
+}
+
+.inventory-form-actions {
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .inventory-page {
+    padding: 20px 14px 36px;
+  }
+
+  .inventory-header,
+  .inventory-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .inventory-header .ant-btn,
+  .inventory-section-heading .ant-btn {
+    align-self: flex-start;
+  }
+}

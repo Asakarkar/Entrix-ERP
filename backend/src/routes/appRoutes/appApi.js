@@ -30,4 +30,12 @@ routesList.forEach(({ entity, controllerName }) => {
   routerApp(entity, controller);
 });
 
+const inventoryController = appControllers.inventoryController;
+router.get('/inventory/summary', catchErrors(inventoryController.inventorySummary));
+router.get('/inventory/stock', catchErrors(inventoryController.stock));
+router.get('/inventory/low-stock', catchErrors(inventoryController.lowStock));
+router.get('/inventory/history', catchErrors(inventoryController.history));
+router.post('/inventory/movement', catchErrors(inventoryController.movement));
+router.post('/inventory/transfer', catchErrors(inventoryController.transfer));
+
 module.exports = router;
