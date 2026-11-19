@@ -1045,6 +1045,101 @@ h3,
   gap: 20px;
 }
 
+.dashboard-welcome {
+  position: relative;
+  display: flex;
+  min-height: 184px;
+  padding: 26px 30px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: var(--radius-container);
+  background: linear-gradient(112deg, #102653 0%, #17458f 62%, #2462c7 100%);
+  color: #fff;
+}
+
+.dashboard-welcome::after {
+  position: absolute;
+  top: -116px;
+  right: 22%;
+  width: 340px;
+  height: 340px;
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 34px rgb(255 255 255 / 3%), 0 0 0 72px rgb(255 255 255 / 2%);
+  content: '';
+  pointer-events: none;
+}
+
+.dashboard-welcome-content,
+.dashboard-welcome-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-welcome-eyebrow {
+  display: flex;
+  margin-bottom: 10px;
+  align-items: center;
+  gap: 8px;
+  color: rgb(255 255 255 / 72%);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.dashboard-welcome-eyebrow span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #75e0b0;
+  box-shadow: 0 0 0 4px rgb(117 224 176 / 14%);
+}
+
+.dashboard-welcome h1 {
+  margin: 0;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+
+.dashboard-welcome-content > p {
+  margin: 5px 0 15px;
+  color: rgb(255 255 255 / 76%);
+  font-size: 13px;
+}
+
+.dashboard-welcome-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgb(255 255 255 / 68%);
+  font-size: 12px;
+}
+
+.dashboard-welcome-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dashboard-welcome-actions .ant-btn {
+  white-space: nowrap;
+}
+
+.dashboard-welcome-actions .ant-btn-text {
+  color: #fff;
+}
+
+.dashboard-welcome-actions .ant-btn-text:hover {
+  background: rgb(255 255 255 / 12%);
+  color: #fff;
+}
+
 .dashboard-kpi-row,
 .dashboard-panels {
   margin-bottom: 0 !important;
@@ -1149,6 +1244,11 @@ h3,
   margin: 4px 0 0;
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+.dashboard-panel-heading > .ant-btn {
+  flex: 0 0 auto;
+  padding-inline: 8px;
 }
 
 .dashboard-panel-icon {
@@ -1458,6 +1558,27 @@ h3,
 
   .dashboard-page {
     gap: 14px;
+  }
+
+  .dashboard-welcome {
+    min-height: 0;
+    padding: 22px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-welcome h1 {
+    font-size: 24px;
+  }
+
+  .dashboard-welcome-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .dashboard-welcome-actions .ant-btn {
+    flex: 1 1 auto;
   }
 
   .dashboard-kpi {

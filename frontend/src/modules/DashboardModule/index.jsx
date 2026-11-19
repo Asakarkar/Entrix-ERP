@@ -1,19 +1,26 @@
 import { useEffect } from 'react';
 import dayjs from 'dayjs';
-import { Col, Row, Tag } from 'antd';
+import { Button, Col, Row, Tag } from 'antd';
 import {
+  ArrowRightOutlined,
   BankOutlined,
+  CalendarOutlined,
+  FileAddOutlined,
   FileTextOutlined,
+  ShopOutlined,
   TeamOutlined,
+  UserAddOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 import useLanguage from '@/locale/useLanguage';
 import { useMoney, useDate } from '@/settings';
 import { request } from '@/request';
 import useFetch from '@/hooks/useFetch';
 import useOnFetch from '@/hooks/useOnFetch';
+import { selectCurrentAdmin } from '@/redux/auth/selectors';
 import { selectMoneyFormat } from '@/redux/settings/selectors';
 import { tagColor } from '@/utils/statusTagColor';
 
@@ -24,10 +31,16 @@ import CustomerPreviewCard from './components/CustomerPreviewCard';
 
 export default function DashboardModule() {
   const translate = useLanguage();
+  const navigate = useNavigate();
+  const admin = useSelector(selectCurrentAdmin);
   const { moneyFormatter } = useMoney();
   const { dateFormat } = useDate();
   const moneyFormatSettings = useSelector(selectMoneyFormat);
   const currency = moneyFormatSettings?.default_currency_code || null;
+  const firstName = (admin?.name || '').trim().split(/\s+/)[0] || 'there';
+  const hour = dayjs().hour();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const welcomeGreeting = admin?.name ? `${greeting}, ${firstName}` : greeting;
 
   const {
     result: invoiceResult,
@@ -48,7 +61,7 @@ export default function DashboardModule() {
 
     fetchInvoicesStats(request.summary({ entity: 'invoice', options: { currency } }));
     fetchPaymentsStats(request.summary({ entity: 'payment', options: { currency } }));
-  }, [currency]);
+  }, [currency, fetchInvoicesStats, fetchPaymentsStats]);
 
   const invoiceColumns = [
     { title: translate('Number'), dataIndex: 'number' },
@@ -85,7 +98,44 @@ export default function DashboardModule() {
   ];
 
   return (
-    <div className="dashboard-page">
+    <main className="dashboard-page">
+      <header className="dashboard-welcome">
+        <div className="dashboard-welcome-content">
+          <div className="dashboard-welcome-eyebrow">
+            <span />
+            BUSINESS OVERVIEW
+          </div>
+          <h1>{welcomeGreeting}</h1>
+          <p>Here's what's happening across your business today.</p>
+          <div className="dashboard-welcome-date">
+            <CalendarOutlined />
+            <span>{dayjs().format('dddd, MMMM D, YYYY')}</span>
+          </div>
+        </div>
+        <div className="dashboard-welcome-actions" aria-label="Quick actions">
+          <Button
+            type="primary"
+            icon={<FileAddOutlined />}
+            onClick={() => navigate('/invoice/create')}
+          >
+            Create invoice
+          </Button>
+          <Button
+            icon={<UserAddOutlined />}
+            onClick={() => navigate('/customer')}
+          >
+            Customers
+          </Button>
+          <Button
+            type="text"
+            icon={<ShopOutlined />}
+            onClick={() => navigate('/inventory')}
+          >
+            Inventory
+          </Button>
+        </div>
+      </header>
+
       <Row gutter={[16, 16]} className="dashboard-kpi-row">
         <SummaryCard
           title={translate('Invoice value')}
@@ -161,6 +211,9 @@ export default function DashboardModule() {
                 <h2>{translate('Recent Invoices')}</h2>
                 <p>{translate('The latest activity in your workspace')}</p>
               </div>
+              <Button type="link" onClick={() => navigate('/invoice')}>
+                View all <ArrowRightOutlined />
+              </Button>
             </div>
             <RecentTable entity="invoice" dataTableColumns={invoiceColumns} />
           </section>
@@ -172,11 +225,14 @@ export default function DashboardModule() {
                 <h2>{translate('Recent Payments')}</h2>
                 <p>{translate('Recently recorded customer payments')}</p>
               </div>
+              <Button type="link" onClick={() => navigate('/payment')}>
+                View all <ArrowRightOutlined />
+              </Button>
             </div>
             <RecentTable entity="payment" dataTableColumns={paymentColumns} />
           </section>
         </Col>
       </Row>
-    </div>
+    </main>
   );
 }
