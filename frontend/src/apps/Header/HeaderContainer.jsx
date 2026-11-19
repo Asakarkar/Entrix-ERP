@@ -27,6 +27,10 @@ export default function HeaderContent() {
           ? translate('invoices')
           : path.startsWith('/customer')
             ? translate('customers')
+            : path.startsWith('/project')
+              ? 'Projects'
+              : path.startsWith('/inventory')
+                ? 'Inventory'
             : path.startsWith('/payment')
               ? translate('payments')
               : path.startsWith('/settings')

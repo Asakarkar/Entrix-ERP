@@ -544,8 +544,11 @@ h3,
   top: 0;
   z-index: 15;
   display: flex;
+  width: 100%;
+  max-width: 1600px;
   height: 72px;
   padding: 0 32px;
+  margin-inline: auto;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
@@ -639,6 +642,10 @@ h3,
   padding: 24px !important;
   border-radius: var(--radius-container);
   background: var(--bg-surface);
+}
+
+.erp-content .whiteBox.layoutPadding .ant-page-header {
+  margin-inline: -24px;
 }
 
 .erp-content .ant-row {
@@ -1464,11 +1471,15 @@ h3,
 
   .erp-content {
     min-height: calc(100vh - 64px);
-    padding: 16px 12px 84px !important;
+    padding: 16px 12px 84px 58px !important;
   }
 
   .erp-content .whiteBox.layoutPadding {
     padding: 16px !important;
+  }
+
+  .erp-content .whiteBox.layoutPadding .ant-page-header {
+    margin-inline: -16px;
     border-radius: 12px;
   }
 
